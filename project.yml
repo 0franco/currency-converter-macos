@@ -1,0 +1,33 @@
+name: CurrencyConverter
+options:
+  bundleIdPrefix: com.franco
+targets:
+  CurrencyConverterMacOS:
+    type: framework
+    platform: macOS
+    deploymentTarget: "14.0"
+    sources:
+      - path: Sources/CurrencyConverterMacOS
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+
+  CurrencyConverter:
+    type: application
+    platform: macOS
+    deploymentTarget: "14.0"
+    sources:
+      - path: CurrencyConverter
+    info:
+      path: CurrencyConverter/Info.plist
+    dependencies:
+      - target: CurrencyConverterMacOS
+
+  CurrencyConverterMacOSTests:
+    type: bundle.unit-test
+    platform: macOS
+    deploymentTarget: "14.0"
+    sources:
+      - path: Tests/CurrencyConverterMacOSTests
+    dependencies:
+      - target: CurrencyConverterMacOS
