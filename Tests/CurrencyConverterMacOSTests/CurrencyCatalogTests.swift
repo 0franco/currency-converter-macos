@@ -472,12 +472,12 @@ final class CurrencyCatalogTests: XCTestCase {
                 XCTAssertEqual(context.sourceCode, "USD")
                 XCTAssertEqual(context.targetCode, "EUR")
                 started.fulfill()
-                return CurrencyQuote(
+                return .fresh(CurrencyQuote(
                     sourceCode: context.sourceCode,
                     targetCode: context.targetCode,
                     rate: Decimal(string: "0.80")!,
                     updatedAt: "2026-04-24"
-                )
+                ))
             }
         )
 
@@ -501,7 +501,7 @@ final class CurrencyCatalogTests: XCTestCase {
 
         let viewModel = CurrencyConversionViewModel(
             quoteLoader: { _ in
-                CurrencyQuote(sourceCode: "USD", targetCode: "EUR", rate: Decimal(1))
+                .fresh(CurrencyQuote(sourceCode: "USD", targetCode: "EUR", rate: Decimal(1)))
             },
             refreshAction: {
             await counter.increment()
@@ -514,7 +514,8 @@ final class CurrencyCatalogTests: XCTestCase {
         XCTAssertTrue(viewModel.isRefreshing)
 
         viewModel.requestRefresh()
-        XCTAssertEqual(await counter.count, 1)
+        let countAfterSecondRequest = await counter.count
+        XCTAssertEqual(countAfterSecondRequest, 1)
 
         await gate.release()
 
@@ -524,6 +525,7 @@ final class CurrencyCatalogTests: XCTestCase {
         }
 
         XCTAssertFalse(viewModel.isRefreshing)
-        XCTAssertEqual(await counter.count, 1)
+        let countAfterFinish = await counter.count
+        XCTAssertEqual(countAfterFinish, 1)
     }
 }

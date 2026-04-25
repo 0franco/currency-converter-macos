@@ -394,6 +394,7 @@ public final class CurrencyConversionViewModel: ObservableObject {
         formatter.minimumFractionDigits = 2
         formatter.maximumFractionDigits = 4
         formatter.usesGroupingSeparator = true
+        formatter.locale = Locale(identifier: "en_US_POSIX")
         return formatter
     }()
 
@@ -403,6 +404,7 @@ public final class CurrencyConversionViewModel: ObservableObject {
         formatter.minimumFractionDigits = 2
         formatter.maximumFractionDigits = 6
         formatter.usesGroupingSeparator = false
+        formatter.locale = Locale(identifier: "en_US_POSIX")
         return formatter
     }()
 
