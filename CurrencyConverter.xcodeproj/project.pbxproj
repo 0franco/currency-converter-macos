@@ -326,7 +326,7 @@
 					"@loader_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.franco.CurrencyConverterMacOSTests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.converter.CurrencyConverterMacOSTests;
 				SDKROOT = macosx;
 			};
 			name = Debug;
@@ -404,7 +404,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.franco.CurrencyConverter;
+				PRODUCT_BUNDLE_IDENTIFIER = com.converter.CurrencyConverter;
 				SDKROOT = macosx;
 			};
 			name = Release;
@@ -475,7 +475,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.franco.CurrencyConverter;
+				PRODUCT_BUNDLE_IDENTIFIER = com.converter.CurrencyConverter;
 				SDKROOT = macosx;
 			};
 			name = Debug;
@@ -497,7 +497,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.franco.CurrencyConverterMacOS;
+				PRODUCT_BUNDLE_IDENTIFIER = com.converter.CurrencyConverterMacOS;
 				SDKROOT = macosx;
 				SKIP_INSTALL = YES;
 				VERSIONING_SYSTEM = "apple-generic";
@@ -515,7 +515,7 @@
 					"@loader_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.franco.CurrencyConverterMacOSTests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.converter.CurrencyConverterMacOSTests;
 				SDKROOT = macosx;
 			};
 			name = Release;
@@ -537,7 +537,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.franco.CurrencyConverterMacOS;
+				PRODUCT_BUNDLE_IDENTIFIER = com.converter.CurrencyConverterMacOS;
 				SDKROOT = macosx;
 				SKIP_INSTALL = YES;
 				VERSIONING_SYSTEM = "apple-generic";

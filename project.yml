@@ -1,6 +1,6 @@
 name: CurrencyConverter
 options:
-  bundleIdPrefix: com.franco
+  bundleIdPrefix: com.converter
 targets:
   CurrencyConverterMacOS:
     type: framework
