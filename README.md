@@ -1,5 +1,9 @@
 # Currency Converter for macOS
 
+<p align="center">
+  <img src="media/logo.png" alt="Currency Converter logo" width="120" />
+</p>
+
 A lightweight, native macOS menu bar app that makes live currency conversion effortless.
 
 ## Features
@@ -8,6 +12,12 @@ A lightweight, native macOS menu bar app that makes live currency conversion eff
 - **Offline Resilience**: Caches recent successful quotes and gracefully falls back to stale data when offline or experiencing API issues.
 - **Favorite Pairs**: Save your most frequently used currency pairs for quick, one-click access.
 - **Instant Conversions**: Converted amounts are re-calculated locally instantly as you type.
+
+## Preview
+
+<p align="center">
+  <img src="media/preview.png" alt="Currency Converter preview" width="400" />
+</p>
 
 ## Prerequisites
 - **macOS 14.0** or later
