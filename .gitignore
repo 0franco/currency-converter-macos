@@ -13,6 +13,7 @@ xcuserdata/
 build/
 DerivedData/
 .derivedData/
+.derivedData.*
 .cache/
 *.moved-aside
 *.pbxuser
