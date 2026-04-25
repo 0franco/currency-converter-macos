@@ -1,13 +1,5 @@
-import SwiftUI
+import AppKit
 
-@main
-struct CurrencyConverterApp: App {
-    @StateObject private var composition = AppComposition()
-
-    var body: some Scene {
-        MenuBarExtra("Currency Converter", systemImage: "dollarsign.arrow.circlepath") {
-            MenuBarView(viewModel: composition.viewModel)
-        }
-        .menuBarExtraStyle(.window)
-    }
-}
+// This file is intentionally minimal.
+// The real entry point is `main.swift` which calls `AppDelegate.run()`.
+// We keep this file so the Xcode target has a clear home for app-level types.
