@@ -13,14 +13,17 @@ private struct InlineCurrencyPicker: View {
     let onCancel: () -> Void
 
     @State private var searchText = ""
+    @State private var assetFilter: CurrencyAssetFilter = .all
     @FocusState private var searchFocused: Bool
 
     private var filtered: [CurrencyDescriptor] {
-        guard !searchText.isEmpty else { return currencies }
-        return currencies.filter {
+        let categoryMatches = currencies.filter { assetFilter.includes($0) }
+        guard !searchText.isEmpty else { return categoryMatches }
+
+        return categoryMatches.filter {
             $0.code.localizedCaseInsensitiveContains(searchText) ||
-            $0.displayName.localizedCaseInsensitiveContains(searchText) ||
-            ($0.symbol?.localizedCaseInsensitiveContains(searchText) ?? false)
+                $0.displayName.localizedCaseInsensitiveContains(searchText) ||
+                ($0.symbol?.localizedCaseInsensitiveContains(searchText) ?? false)
         }
     }
 
@@ -52,12 +55,22 @@ private struct InlineCurrencyPicker: View {
             .padding(.horizontal, 14)
             .padding(.vertical, 10)
 
+            Picker("Asset Type", selection: $assetFilter) {
+                ForEach(CurrencyAssetFilter.allCases) { filter in
+                    Text(filter.title).tag(filter)
+                }
+            }
+            .pickerStyle(.segmented)
+            .labelsHidden()
+            .padding(.horizontal, 14)
+            .padding(.bottom, 8)
+
             // Search field
             HStack(spacing: 6) {
                 Image(systemName: "magnifyingglass")
                     .foregroundColor(.secondary)
                     .font(.caption)
-                TextField("Search currency…", text: $searchText)
+                TextField("Search assets…", text: $searchText)
                     .textFieldStyle(.plain)
                     .focused($searchFocused)
                     .font(.body)
@@ -86,7 +99,7 @@ private struct InlineCurrencyPicker: View {
                     Image(systemName: "magnifyingglass")
                         .font(.title2)
                         .foregroundColor(.secondary)
-                    Text("No currencies found")
+                    Text("No assets found")
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                 }
@@ -104,9 +117,21 @@ private struct InlineCurrencyPicker: View {
                                             .font(.body.weight(.semibold))
                                             .frame(width: 44, alignment: .leading)
                                         VStack(alignment: .leading, spacing: 1) {
-                                            Text(currency.displayName)
-                                                .font(.body)
-                                                .lineLimit(1)
+                                            HStack(spacing: 6) {
+                                                Text(currency.displayName)
+                                                    .font(.body)
+                                                    .lineLimit(1)
+
+                                                if currency.assetKind == .crypto {
+                                                    Text("Crypto")
+                                                        .font(.caption2.weight(.medium))
+                                                        .foregroundColor(.secondary)
+                                                        .padding(.horizontal, 5)
+                                                        .padding(.vertical, 1)
+                                                        .background(Color(nsColor: .controlBackgroundColor))
+                                                        .cornerRadius(4)
+                                                }
+                                            }
                                             if let symbol = currency.symbol, !symbol.isEmpty {
                                                 Text(symbol)
                                                     .font(.caption)
@@ -142,6 +167,36 @@ private struct InlineCurrencyPicker: View {
         }
         .frame(width: 360, height: 420)
         .onAppear { searchFocused = true }
+    }
+}
+
+private enum CurrencyAssetFilter: String, CaseIterable, Identifiable {
+    case all
+    case fiat
+    case crypto
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .all:
+            return "All"
+        case .fiat:
+            return "Fiat"
+        case .crypto:
+            return "Crypto"
+        }
+    }
+
+    func includes(_ currency: CurrencyDescriptor) -> Bool {
+        switch self {
+        case .all:
+            return true
+        case .fiat:
+            return currency.assetKind == .fiat
+        case .crypto:
+            return currency.assetKind == .crypto
+        }
     }
 }
 
@@ -210,7 +265,13 @@ struct MenuBarView: View {
     }
 
     private var sortedCurrencies: [CurrencyDescriptor] {
-        viewModel.supportedCurrencies.sorted { $0.code < $1.code }
+        viewModel.supportedCurrencies.sorted {
+            if $0.assetKind != $1.assetKind {
+                return $0.assetKind == .fiat
+            }
+
+            return $0.code < $1.code
+        }
     }
 
     var body: some View {

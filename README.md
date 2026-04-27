@@ -21,23 +21,49 @@ A lightweight, native macOS menu bar app that makes live currency conversion eff
 
 ## Prerequisites
 - **macOS 14.0** or later
-- **Xcode 15.0** or later (for building from source)
+- **Xcode Command Line Tools** (minimum for building from source)
+- **Xcode 15.0** or later (optional — only needed for the Xcode build path)
 
 ## Installation
 
-To permanently install the app on your Mac so it runs independently of Xcode:
+### Quick Install (no Xcode required)
 
-1. Clone or download this repository to your local machine.
+You only need the **Command Line Tools** — no full Xcode IDE:
+
+```bash
+# 1. Install Command Line Tools (if you haven't already)
+xcode-select --install
+
+# 2. Clone and build
+git clone https://github.com/0franco/currency-converter-macos.git
+cd currency-converter-macos
+bash scripts/build_spm.sh
+```
+
+This builds the app via Swift Package Manager, assembles a proper `.app` bundle in
+`build/CurrencyConverter.app`, and symlinks it into `/Applications`.
+
+To install elsewhere: `APP_INSTALL_DIR="$HOME/Applications" bash scripts/build_spm.sh`
+
+### Install via Xcode
+
+If you have the full Xcode IDE installed:
+
+1. Clone or download this repository.
 2. Open `CurrencyConverter.xcodeproj` in Xcode.
 3. From the top menu bar, select **Product > Archive**.
-4. When the archive finishes and the Organizer window opens, select your archive and click **Distribute App**.
-5. Select **Custom**, then **Copy App**, and proceed to save the exported `CurrencyConverter.app` file.
-6. Move the exported `CurrencyConverter.app` into your Mac's **Applications** (`/Applications`) folder.
-7. Double-click the app from your Applications folder to launch it.
+4. In the Organizer window, select your archive and click **Distribute App**.
+5. Select **Custom**, then **Copy App**, and save the exported `CurrencyConverter.app`.
+6. Move it into `/Applications`.
 
-> **Troubleshooting "Damaged or Incomplete" Error**: 
-> If you do not have a paid Apple Developer account, Xcode exports the app with an ad-hoc signature. macOS Gatekeeper may flag this exported app as "damaged" when you try to open it from Finder.
-> To fix this, open your Terminal and run the following commands to bypass Gatekeeper and re-sign the app locally:
+Alternatively, use the xcodebuild script:
+```bash
+bash scripts/build_and_link.sh
+```
+
+> **Troubleshooting "Damaged or Incomplete" Error**:
+> Without a paid Apple Developer account, the app is ad-hoc signed. macOS Gatekeeper
+> may flag it as "damaged". Fix it with:
 > ```bash
 > xattr -cr /Applications/CurrencyConverter.app
 > codesign --force --deep --sign - /Applications/CurrencyConverter.app
@@ -52,23 +78,22 @@ To permanently install the app on your Mac so it runs independently of Xcode:
 4. Press `Cmd + R` (or go to **Product > Run**).
 5. Since this is a menu bar accessory app, it will **not** appear in your Dock. Look for the application icon (a circle with a dollar sign and arrows) in the top-right macOS menu bar.
 
-### Option 2: Using the Command Line
-You can build the project from your terminal using `xcodebuild`:
-
+### Option 2: Using the SPM Script (no Xcode required)
 ```bash
-# Build the project in Debug mode
-xcodebuild -project CurrencyConverter.xcodeproj -scheme CurrencyConverter -configuration Debug build
+bash scripts/build_spm.sh
 ```
 
-*Note: To run the built product from the command line, you will need to locate the `.app` bundle inside Xcode's DerivedData folder (e.g., `~/Library/Developer/Xcode/DerivedData/`). For everyday use, building through Xcode and archiving it to your `Applications` folder is recommended.*
+This uses `swift build` under the hood — only the Command Line Tools are needed.
+The script assembles a proper `.app` bundle in `build/` and symlinks it into `/Applications`.
 
-To build the app into the repository `build/` folder and create or update a symlink in `/Applications`, run:
+### Option 3: Using xcodebuild
+Requires the full Xcode IDE:
 
 ```bash
-./scripts/build_and_link.sh
+bash scripts/build_and_link.sh
 ```
 
-If you want the link somewhere else, override `APP_INSTALL_DIR`, for example `APP_INSTALL_DIR="$HOME/Applications" ./scripts/build_and_link.sh`.
+If you want the link somewhere else, override `APP_INSTALL_DIR`, for example `APP_INSTALL_DIR="$HOME/Applications" bash scripts/build_and_link.sh`.
 
 ## Development & Testing
 
@@ -80,7 +105,11 @@ swift test
 ```
 
 ### Troubleshooting
-If `xcodebuild` or `swift test` fails with a command line tools error, ensure your active developer directory is pointing to the full Xcode installation and not just the Command Line Tools:
+
+**`xcodebuild` fails with "requires Xcode" error:**
+You only have Command Line Tools installed. Either install full Xcode from the App Store, or use the SPM build script (`bash scripts/build_spm.sh`) which doesn't need Xcode.
+
+If you do have Xcode installed, point the developer tools to it:
 ```bash
 sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
 ```

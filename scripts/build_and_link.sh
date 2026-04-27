@@ -17,7 +17,29 @@ APP_PATH="$BUILD_DIR/$APP_NAME"
 LINK_PATH="$INSTALL_DIR/$APP_NAME"
 
 if ! command -v xcodebuild >/dev/null 2>&1; then
-  echo "error: xcodebuild is not available. Install Xcode and its command line tools first." >&2
+  echo "error: xcodebuild is not available." >&2
+  echo "" >&2
+  echo "This script requires the full Xcode IDE." >&2
+  echo "If you only have Command Line Tools, use the SPM build script instead:" >&2
+  echo "" >&2
+  echo "  bash scripts/build_spm.sh" >&2
+  echo "" >&2
+  exit 1
+fi
+
+# Detect Command Line Tools-only installs (xcodebuild exists but won't work)
+XCODE_DEV_DIR="$(xcode-select -p 2>/dev/null || true)"
+if [[ "$XCODE_DEV_DIR" == "/Library/Developer/CommandLineTools" ]]; then
+  echo "error: xcodebuild requires the full Xcode IDE, but the active" >&2
+  echo "developer directory is only Command Line Tools." >&2
+  echo "" >&2
+  echo "Options:" >&2
+  echo "  1. Install Xcode from the App Store, then run:" >&2
+  echo "       sudo xcode-select -s /Applications/Xcode.app/Contents/Developer" >&2
+  echo "" >&2
+  echo "  2. Use the SPM build script (no Xcode required):" >&2
+  echo "       bash scripts/build_spm.sh" >&2
+  echo "" >&2
   exit 1
 fi
 

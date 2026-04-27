@@ -1,16 +1,43 @@
 import Foundation
 
+public enum CurrencyAssetKind: String, Codable, Sendable {
+    case fiat
+    case crypto
+}
+
 public struct CurrencyDescriptor: Codable, Hashable, Identifiable, Sendable {
     public let code: String
     public let displayName: String
     public let symbol: String?
+    public let assetKind: CurrencyAssetKind
 
     public var id: String { code }
 
-    public init(code: String, displayName: String, symbol: String?) {
+    public init(
+        code: String,
+        displayName: String,
+        symbol: String?,
+        assetKind: CurrencyAssetKind = .fiat
+    ) {
         self.code = code
         self.displayName = displayName
         self.symbol = symbol
+        self.assetKind = assetKind
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case code
+        case displayName
+        case symbol
+        case assetKind
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        code = try container.decode(String.self, forKey: .code)
+        displayName = try container.decode(String.self, forKey: .displayName)
+        symbol = try container.decodeIfPresent(String.self, forKey: .symbol)
+        assetKind = try container.decodeIfPresent(CurrencyAssetKind.self, forKey: .assetKind) ?? .fiat
     }
 }
 
@@ -58,7 +85,7 @@ public struct CurrencyCatalogService: CurrencyCatalogProviding, Sendable {
     ) -> [CurrencyDescriptor] {
         let locale = Locale(identifier: "en_US_POSIX")
 
-        let currencies = Locale.commonISOCurrencyCodes
+        let fiatCurrencies = Locale.commonISOCurrencyCodes
             .map { $0.uppercased() }
             .compactMap { code -> CurrencyDescriptor? in
                 guard let displayName = locale.localizedString(forCurrencyCode: code)?
@@ -70,9 +97,13 @@ public struct CurrencyCatalogService: CurrencyCatalogProviding, Sendable {
                 return CurrencyDescriptor(
                     code: code,
                     displayName: displayName,
-                    symbol: symbol(for: code, locale: locale)
+                    symbol: symbol(for: code, locale: locale),
+                    assetKind: .fiat
                 )
             }
+
+        let cryptoCurrencies = curatedCryptoCurrencies()
+        let currencies = fiatCurrencies + cryptoCurrencies
 
         return currencies.sorted {
             sortCurrencies(
@@ -106,6 +137,21 @@ public struct CurrencyCatalogService: CurrencyCatalogProviding, Sendable {
 
             return lhs.code < rhs.code
         }
+    }
+
+    private static func curatedCryptoCurrencies() -> [CurrencyDescriptor] {
+        [
+            CurrencyDescriptor(code: "BTC", displayName: "Bitcoin", symbol: "₿", assetKind: .crypto),
+            CurrencyDescriptor(code: "ETH", displayName: "Ethereum", symbol: "ETH", assetKind: .crypto),
+            CurrencyDescriptor(code: "USDT", displayName: "Tether", symbol: "USDT", assetKind: .crypto),
+            CurrencyDescriptor(code: "USDC", displayName: "USDC", symbol: "USDC", assetKind: .crypto),
+            CurrencyDescriptor(code: "BNB", displayName: "Binance Coin", symbol: "BNB", assetKind: .crypto),
+            CurrencyDescriptor(code: "SOL", displayName: "Solana", symbol: "SOL", assetKind: .crypto),
+            CurrencyDescriptor(code: "XRP", displayName: "Ripple", symbol: "XRP", assetKind: .crypto),
+            CurrencyDescriptor(code: "ADA", displayName: "Cardano", symbol: "ADA", assetKind: .crypto),
+            CurrencyDescriptor(code: "DOGE", displayName: "Dogecoin", symbol: "DOGE", assetKind: .crypto),
+            CurrencyDescriptor(code: "LTC", displayName: "Litecoin", symbol: "LTC", assetKind: .crypto)
+        ]
     }
 
     private static func symbol(for code: String, locale: Locale) -> String? {

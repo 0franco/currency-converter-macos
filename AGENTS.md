@@ -41,9 +41,10 @@ result fetched from a free, no-auth exchange-rate CDN.
 │   └── FavoriteCurrencyPairStoreTests.swift
 │
 ├── project.yml          # XcodeGen spec — source of truth for the Xcode project
-├── Package.swift        # SPM manifest for the CurrencyConverterMacOS library target
+├── Package.swift        # SPM manifest — library + executable targets
 ├── scripts/
-│   └── build_and_link.sh  # Release build + symlink into /Applications (or APP_INSTALL_DIR)
+│   ├── build_and_link.sh  # Release build via xcodebuild (requires full Xcode)
+│   └── build_spm.sh       # Release build via swift build (Command Line Tools only)
 ```
 
 ---
@@ -156,26 +157,38 @@ Reads/writes `CurrencyQuote` per pair to `UserDefaults`.
 
 ## Build System
 
-The project uses **XcodeGen** (`project.yml`) to generate `CurrencyConverter.xcodeproj`.
-The SPM `Package.swift` covers only the framework library for Swift package tooling
-(e.g. running `swift test`).
+The project supports **two build paths**:
+
+### 1. SPM build (no Xcode required)
+
+`Package.swift` defines both the `CurrencyConverterMacOS` library and a
+`CurrencyConverterApp` executable target. The SPM build script assembles a proper
+`.app` bundle from the `swift build` output.
+
+```bash
+bash scripts/build_spm.sh
+```
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `CONFIGURATION` | `release` | `debug` or `release` |
+| `BUILD_DIR` | `./build` | Output directory for the `.app` bundle |
+| `APP_INSTALL_DIR` | `/Applications` | Symlink destination |
+
+### 2. xcodebuild (requires full Xcode IDE)
+
+The **XcodeGen** spec (`project.yml`) generates `CurrencyConverter.xcodeproj`.
 
 **Regenerate the Xcode project after editing `project.yml`:**
 ```bash
 xcodegen generate
 ```
 
-**Run unit tests (fast, no simulator):**
-```bash
-swift test
-```
-
-**Build a release app and symlink into `/Applications`:**
+**Build and install:**
 ```bash
 bash scripts/build_and_link.sh
 ```
 
-Environment overrides for the build script:
 | Variable | Default | Purpose |
 |---|---|---|
 | `CONFIGURATION` | `Release` | `Debug` or `Release` |
@@ -184,6 +197,12 @@ Environment overrides for the build script:
 | `ARCHITECTURE` | `uname -m` | `arm64` or `x86_64` |
 | `QUIET_BUILD` | `1` | Set `0` for full xcodebuild output |
 | `KEEP_DERIVED_DATA` | `0` | Set `1` to keep derived data after build |
+
+### Unit tests (both paths)
+
+```bash
+swift test
+```
 
 ---
 

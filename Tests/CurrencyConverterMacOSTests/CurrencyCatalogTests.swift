@@ -39,6 +39,15 @@ final class CurrencyCatalogTests: XCTestCase {
         XCTAssertTrue(supportedCodes.contains("CNY"))
     }
 
+    func testSupportedCurrenciesContainCuratedCryptoAssets() {
+        let supportedCurrencies = CurrencyCatalogService.live.supportedCurrencies()
+        let supportedCodes = Set(supportedCurrencies.map(\.code))
+
+        XCTAssertTrue(supportedCodes.isSuperset(of: ["BTC", "ETH", "USDT", "USDC", "BNB", "SOL", "XRP", "ADA", "DOGE", "LTC"]))
+        XCTAssertEqual(CurrencyCatalogService.live.currency(for: "BTC")?.assetKind, .crypto)
+        XCTAssertEqual(CurrencyCatalogService.live.currency(for: "BTC")?.displayName, "Bitcoin")
+    }
+
     func testSupportedCurrenciesUseUniqueCodesAndNames() {
         let currencies = CurrencyCatalogService.live.supportedCurrencies()
         let uniqueCodes = Set(currencies.map(\.code))
@@ -62,6 +71,28 @@ final class CurrencyCatalogTests: XCTestCase {
         let currency = CurrencyCatalogService.live.currency(for: "usd")
 
         XCTAssertEqual(currency?.code, "USD")
+    }
+
+    func testCryptoCurrencyLookupIsCaseInsensitive() {
+        let currency = CurrencyCatalogService.live.currency(for: "btc")
+
+        XCTAssertEqual(currency?.code, "BTC")
+        XCTAssertEqual(currency?.assetKind, .crypto)
+        XCTAssertEqual(currency?.symbol, "₿")
+    }
+
+    func testCurrencyDescriptorDecodesMissingAssetKindAsFiat() throws {
+        let data = """
+        {
+            "code": "USD",
+            "displayName": "US Dollar",
+            "symbol": "$"
+        }
+        """.data(using: .utf8)!
+
+        let currency = try JSONDecoder().decode(CurrencyDescriptor.self, from: data)
+
+        XCTAssertEqual(currency.assetKind, .fiat)
     }
 
     func testServiceCanBeConstructedWithCustomCatalogForAppInjection() {
@@ -156,6 +187,19 @@ final class CurrencyCatalogTests: XCTestCase {
 
         XCTAssertEqual(selectionState.sourceCode, "AUD")
         XCTAssertEqual(selectionState.sourceCurrency, audCurrency)
+    }
+
+    func testSelectionStateAllowsCryptoSelections() {
+        var selectionState = CurrencySelectionState(catalog: CurrencyCatalogService.live)
+
+        selectionState.selectSourceCurrency(code: "btc")
+        selectionState.selectTargetCurrency(code: "usd")
+
+        XCTAssertEqual(selectionState.sourceCode, "BTC")
+        XCTAssertEqual(selectionState.sourceCurrency?.assetKind, .crypto)
+        XCTAssertEqual(selectionState.targetCode, "USD")
+        XCTAssertEqual(selectionState.conversionContext?.sourceCode, "BTC")
+        XCTAssertEqual(selectionState.conversionContext?.targetCode, "USD")
     }
 
     func testSelectionStateCanSwapSourceAndTargetCurrencies() {
@@ -374,6 +418,34 @@ final class CurrencyCatalogTests: XCTestCase {
     }
 
     @MainActor
+    func testConversionViewModelSupportsMixedCryptoFiatSelections() {
+        let viewModel = CurrencyConversionViewModel()
+
+        viewModel.selectSourceCurrency(code: "btc")
+        viewModel.selectTargetCurrency(code: "usd")
+
+        XCTAssertEqual(viewModel.sourceCode, "BTC")
+        XCTAssertEqual(viewModel.targetCode, "USD")
+        XCTAssertEqual(viewModel.sourceCurrency?.assetKind, .crypto)
+        XCTAssertEqual(viewModel.targetCurrency?.assetKind, .fiat)
+        XCTAssertEqual(viewModel.conversionContext?.sourceCode, "BTC")
+        XCTAssertEqual(viewModel.conversionContext?.targetCode, "USD")
+    }
+
+    @MainActor
+    func testConversionViewModelSupportsFiatCryptoSelections() {
+        let viewModel = CurrencyConversionViewModel()
+
+        viewModel.selectTargetCurrency(code: "eth")
+
+        XCTAssertEqual(viewModel.sourceCode, "USD")
+        XCTAssertEqual(viewModel.targetCode, "ETH")
+        XCTAssertEqual(viewModel.targetCurrency?.assetKind, .crypto)
+        XCTAssertEqual(viewModel.conversionContext?.sourceCode, "USD")
+        XCTAssertEqual(viewModel.conversionContext?.targetCode, "ETH")
+    }
+
+    @MainActor
     func testConversionViewModelExposesSourceShortcutsFromDefaultFeaturedCurrencies() {
         let featuredCodes = CurrencyConversionViewModel().featuredCurrencies.map(\.code)
 
@@ -527,5 +599,24 @@ final class CurrencyCatalogTests: XCTestCase {
         XCTAssertFalse(viewModel.isRefreshing)
         let countAfterFinish = await counter.count
         XCTAssertEqual(countAfterFinish, 1)
+    }
+
+    func testLiveExchangeRateProviderShortCircuitsSameCryptoPair() async throws {
+        let bitcoin = CurrencyDescriptor(
+            code: "BTC",
+            displayName: "Bitcoin",
+            symbol: "₿",
+            assetKind: .crypto
+        )
+        let context = CurrencyConversionContext(
+            sourceCurrency: bitcoin,
+            targetCurrency: bitcoin
+        )
+
+        let quote = try await LiveExchangeRateProvider.quote(for: context)
+
+        XCTAssertEqual(quote.sourceCode, "BTC")
+        XCTAssertEqual(quote.targetCode, "BTC")
+        XCTAssertEqual(quote.rate, Decimal(1))
     }
 }

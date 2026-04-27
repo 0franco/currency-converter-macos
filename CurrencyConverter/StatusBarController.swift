@@ -27,7 +27,7 @@ final class StatusBarController: NSObject {
 
         // 2. Popover hosting the SwiftUI content
         popover = NSPopover()
-        popover.contentSize = NSSize(width: 360, height: 400)
+        popover.contentSize = NSSize(width: 360, height: 420)
         popover.behavior = .transient
         popover.animates = true
         popover.contentViewController = NSHostingController(
