@@ -1,12 +1,13 @@
 # Currency Converter for macOS
 
 <p align="center">
-  <img src="media/logo.png" alt="Currency Converter logo" width="120" />
+  <img src="media/banner.png" alt="Currency Converter logo" width="1200" />
 </p>
 
 A lightweight, native macOS menu bar app that makes live currency conversion effortless.
 
-## Features
+## What It Does
+
 - **Live Exchange Rates**: Uses the free exchange-rate API (`fawazahmed0/exchange-api`) for over 200 world currencies.
 - **Menu Bar Integration**: Quick access to live conversions from anywhere without breaking your workflow.
 - **Offline Resilience**: Caches recent successful quotes and gracefully falls back to stale data when offline or experiencing API issues.
@@ -19,14 +20,30 @@ A lightweight, native macOS menu bar app that makes live currency conversion eff
   <img src="media/preview.png" alt="Currency Converter preview" width="400" />
 </p>
 
-## Prerequisites
+## Distribution
+
+This project is not distributed through the Mac App Store. Apple's publishing process
+adds more overhead than this small utility needs, so the supported path is to build
+the app locally from source.
+
+The simplest install path uses Swift Package Manager:
+
+```bash
+bash scripts/build_spm.sh
+```
+
+The script creates a normal `.app` bundle at `build/CurrencyConverter.app` and links
+it into `/Applications`.
+
+## Installation
+
+### Requirements
+
 - **macOS 14.0** or later
 - **Xcode Command Line Tools** (minimum for building from source)
 - **Xcode 15.0** or later (optional — only needed for the Xcode build path)
 
-## Installation
-
-### Quick Install (no Xcode required)
+### Quick Install
 
 You only need the **Command Line Tools** — no full Xcode IDE:
 
@@ -43,9 +60,66 @@ bash scripts/build_spm.sh
 This builds the app via Swift Package Manager, assembles a proper `.app` bundle in
 `build/CurrencyConverter.app`, and symlinks it into `/Applications`.
 
-To install elsewhere: `APP_INSTALL_DIR="$HOME/Applications" bash scripts/build_spm.sh`
+To install somewhere else:
 
-### Install via Xcode
+```bash
+APP_INSTALL_DIR="$HOME/Applications" bash scripts/build_spm.sh
+```
+
+### Launching the App
+
+Currency Converter is a menu bar app, so it does not appear in the Dock. After
+launching it, look for the app icon in the top-right macOS menu bar.
+
+```bash
+open build/CurrencyConverter.app
+```
+
+## Development
+
+The repository contains the AppKit/SwiftUI application target, shared Swift logic in
+`Sources/CurrencyConverterMacOS/`, and unit tests in `Tests/CurrencyConverterMacOSTests/`.
+
+### Run from Xcode
+
+1. Double-click `CurrencyConverter.xcodeproj` to open the project in Xcode.
+2. Wait for the project indexer to finish.
+3. Ensure the active scheme is set to **CurrencyConverter** and your Mac is selected as the run destination.
+4. Press `Cmd + R` or select **Product > Run**.
+
+### Build with Swift Package Manager
+
+This is the recommended non-Xcode build path:
+
+```bash
+bash scripts/build_spm.sh
+```
+
+The script uses `swift build` under the hood, assembles the `.app` bundle in `build/`,
+and links it into `/Applications`.
+
+Useful overrides:
+
+```bash
+CONFIGURATION=debug bash scripts/build_spm.sh
+APP_INSTALL_DIR="$HOME/Applications" bash scripts/build_spm.sh
+```
+
+### Build with xcodebuild
+
+Requires the full Xcode IDE:
+
+```bash
+bash scripts/build_and_link.sh
+```
+
+If you want the link somewhere else:
+
+```bash
+APP_INSTALL_DIR="$HOME/Applications" bash scripts/build_and_link.sh
+```
+
+### Archive with Xcode
 
 If you have the full Xcode IDE installed:
 
@@ -56,55 +130,15 @@ If you have the full Xcode IDE installed:
 5. Select **Custom**, then **Copy App**, and save the exported `CurrencyConverter.app`.
 6. Move it into `/Applications`.
 
-Alternatively, use the xcodebuild script:
-```bash
-bash scripts/build_and_link.sh
-```
-
-> **Troubleshooting "Damaged or Incomplete" Error**:
-> Without a paid Apple Developer account, the app is ad-hoc signed. macOS Gatekeeper
-> may flag it as "damaged". Fix it with:
-> ```bash
-> xattr -cr /Applications/CurrencyConverter.app
-> codesign --force --deep --sign - /Applications/CurrencyConverter.app
-> ```
-
-## How to Build and Run (Development)
-
-### Option 1: Using Xcode (Recommended)
-1. Double-click `CurrencyConverter.xcodeproj` to open the project in Xcode.
-2. Wait for the project indexer to finish.
-3. Ensure the active scheme is set to **CurrencyConverter** and your Mac is selected as the run destination.
-4. Press `Cmd + R` (or go to **Product > Run**).
-5. Since this is a menu bar accessory app, it will **not** appear in your Dock. Look for the application icon (a circle with a dollar sign and arrows) in the top-right macOS menu bar.
-
-### Option 2: Using the SPM Script (no Xcode required)
-```bash
-bash scripts/build_spm.sh
-```
-
-This uses `swift build` under the hood — only the Command Line Tools are needed.
-The script assembles a proper `.app` bundle in `build/` and symlinks it into `/Applications`.
-
-### Option 3: Using xcodebuild
-Requires the full Xcode IDE:
-
-```bash
-bash scripts/build_and_link.sh
-```
-
-If you want the link somewhere else, override `APP_INSTALL_DIR`, for example `APP_INSTALL_DIR="$HOME/Applications" bash scripts/build_and_link.sh`.
-
-## Development & Testing
-
-The repository contains the main AppKit/SwiftUI application target, alongside shared Swift logic located in `Sources/CurrencyConverterMacOS/` and unit tests in `Tests/CurrencyConverterMacOSTests/`.
+## Testing
 
 To run the test suite from the terminal:
+
 ```bash
 swift test
 ```
 
-### Troubleshooting
+## Troubleshooting
 
 **`xcodebuild` fails with "requires Xcode" error:**
 You only have Command Line Tools installed. Either install full Xcode from the App Store, or use the SPM build script (`bash scripts/build_spm.sh`) which doesn't need Xcode.
