@@ -147,3 +147,7 @@ If you do have Xcode installed, point the developer tools to it:
 ```bash
 sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
 ```
+
+**Swift tools version mismatch:**
+If you see a Swift tools version error, update Swift using the official macOS instructions:
+[swift.org/install/macos](https://www.swift.org/install/macos/)
