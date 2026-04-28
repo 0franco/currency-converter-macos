@@ -43,15 +43,20 @@ public enum ExchangeRateProviderError: LocalizedError {
 
 public enum LiveExchangeRateProvider {
     private enum API {
+        struct Endpoint: Sendable {
+            let url: URL
+        }
+
         static let apiVersion = "v1"
 
-        static func endpoints(for sourceCode: String) -> [URL] {
+        static func endpoints(for sourceCode: String) -> [Endpoint] {
             let normalizedSourceCode = sourceCode.lowercased()
             return [
                 URL(string: "https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/\(apiVersion)/currencies/\(normalizedSourceCode).json"),
                 URL(string: "https://latest.currency-api.pages.dev/\(apiVersion)/currencies/\(normalizedSourceCode).json")
             ]
             .compactMap { $0 }
+            .map(Endpoint.init(url:))
         }
     }
 
@@ -76,26 +81,42 @@ public enum LiveExchangeRateProvider {
         var lastError: Error?
 
         for _ in 0...retryCount {
+            var freshestQuote: CurrencyQuote?
+
             for endpoint in endpoints {
                 do {
-                    let (data, response) = try await session.data(from: endpoint)
+                    let request = apiRequest(for: endpoint.url)
+                    let (data, response) = try await session.data(for: request)
                     guard let httpResponse = response as? HTTPURLResponse,
                           200..<300 ~= httpResponse.statusCode else {
                         throw ExchangeRateProviderError.invalidResponse
                     }
 
-                    return try parseQuote(
+                    let quote = try parseQuote(
                         data: data,
                         sourceCode: context.sourceCode,
                         targetCode: context.targetCode
                     )
+                    freshestQuote = fresherQuote(between: freshestQuote, and: quote)
                 } catch {
                     lastError = error
                 }
             }
+
+            if let freshestQuote {
+                return freshestQuote
+            }
         }
 
         throw lastError ?? ExchangeRateProviderError.invalidResponse
+    }
+
+    private static func apiRequest(for url: URL) -> URLRequest {
+        var request = URLRequest(url: url)
+        request.cachePolicy = .reloadIgnoringLocalCacheData
+        request.setValue("no-cache", forHTTPHeaderField: "Cache-Control")
+        request.setValue("no-cache", forHTTPHeaderField: "Pragma")
+        return request
     }
 
     private static func parseQuote(
@@ -141,6 +162,24 @@ public enum LiveExchangeRateProvider {
         }
 
         return nil
+    }
+
+    private static func fresherQuote(
+        between currentQuote: CurrencyQuote?,
+        and candidateQuote: CurrencyQuote
+    ) -> CurrencyQuote {
+        guard let currentQuote else {
+            return candidateQuote
+        }
+
+        switch (currentQuote.updatedAt, candidateQuote.updatedAt) {
+        case let (currentDate?, candidateDate?):
+            return candidateDate > currentDate ? candidateQuote : currentQuote
+        case (nil, _?):
+            return candidateQuote
+        default:
+            return currentQuote
+        }
     }
 }
 

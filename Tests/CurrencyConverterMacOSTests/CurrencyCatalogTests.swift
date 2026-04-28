@@ -1,6 +1,36 @@
 import XCTest
 @testable import CurrencyConverterMacOS
 
+final class MockExchangeRateURLProtocol: URLProtocol, @unchecked Sendable {
+    nonisolated(unsafe) static var requestHandler: (@Sendable (URLRequest) throws -> (HTTPURLResponse, Data))?
+
+    override class func canInit(with request: URLRequest) -> Bool {
+        true
+    }
+
+    override class func canonicalRequest(for request: URLRequest) -> URLRequest {
+        request
+    }
+
+    override func startLoading() {
+        guard let handler = Self.requestHandler else {
+            client?.urlProtocol(self, didFailWithError: URLError(.badServerResponse))
+            return
+        }
+
+        do {
+            let (response, data) = try handler(request)
+            client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
+            client?.urlProtocol(self, didLoad: data)
+            client?.urlProtocolDidFinishLoading(self)
+        } catch {
+            client?.urlProtocol(self, didFailWithError: error)
+        }
+    }
+
+    override func stopLoading() {}
+}
+
 actor RefreshCounter {
     private(set) var count = 0
 
@@ -25,6 +55,11 @@ actor RefreshGate {
 }
 
 final class CurrencyCatalogTests: XCTestCase {
+    override func tearDown() {
+        MockExchangeRateURLProtocol.requestHandler = nil
+        super.tearDown()
+    }
+
     func testLiveServiceUsesExpectedPreselectedDefaults() {
         let service = CurrencyCatalogService.live
 
@@ -618,5 +653,48 @@ final class CurrencyCatalogTests: XCTestCase {
         XCTAssertEqual(quote.sourceCode, "BTC")
         XCTAssertEqual(quote.targetCode, "BTC")
         XCTAssertEqual(quote.rate, Decimal(1))
+    }
+
+    func testLiveExchangeRateProviderPrefersFreshestSuccessfulEndpoint() async throws {
+        let config = URLSessionConfiguration.ephemeral
+        config.protocolClasses = [MockExchangeRateURLProtocol.self]
+        let session = URLSession(configuration: config)
+        let context = CurrencySelectionState().conversionContext!
+
+        MockExchangeRateURLProtocol.requestHandler = { request in
+            guard request.cachePolicy == .reloadIgnoringLocalCacheData,
+                  request.value(forHTTPHeaderField: "Cache-Control") == "no-cache",
+                  request.value(forHTTPHeaderField: "Pragma") == "no-cache" else {
+                throw URLError(.cannotLoadFromNetwork)
+            }
+
+            guard let url = request.url else {
+                throw URLError(.badURL)
+            }
+            let payload: String
+
+            switch url.host {
+            case "cdn.jsdelivr.net":
+                payload = """
+                {"date":"2026-04-24","usd":{"eur":0.92}}
+                """
+            case "latest.currency-api.pages.dev":
+                payload = """
+                {"date":"2026-04-28","usd":{"eur":0.93}}
+                """
+            default:
+                throw URLError(.badURL)
+            }
+
+            let response = HTTPURLResponse(url: url, statusCode: 200, httpVersion: nil, headerFields: nil)!
+            return (response, Data(payload.utf8))
+        }
+
+        let quote = try await LiveExchangeRateProvider.quote(for: context, session: session, retryCount: 0)
+
+        XCTAssertEqual(quote.sourceCode, "USD")
+        XCTAssertEqual(quote.targetCode, "EUR")
+        XCTAssertEqual(quote.rate, Decimal(string: "0.93"))
+        XCTAssertEqual(quote.updatedAt, "2026-04-28")
     }
 }
